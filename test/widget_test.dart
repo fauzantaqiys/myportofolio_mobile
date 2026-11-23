@@ -7,8 +7,10 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const MyApp());
 
-    // Verify that the app bar title is displayed.
+    // Verify that the app bar title and menu items are displayed.
     expect(find.text('MyPortfolio'), findsOneWidget);
     expect(find.text('Lihat Proyek'), findsOneWidget);
+    expect(find.text('Tambah Proyek'), findsOneWidget);
+    expect(find.text('Tambah Pengalaman'), findsOneWidget);
   });
 }
