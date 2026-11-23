@@ -155,3 +155,90 @@ Dalam pengerjaan Individual Assignment 7 ini, kecerdasan buatan (AI) digunakan s
 * **Telaah Kritis Keterbatasan AI & Koreksi Manual yang Dilakukan**:
   * *Keterbatasan*: Jika tidak diinstruksikan secara tegas, AI cenderung menyelesaikan seluruh tugas dalam satu langkah besar (*single monolithic edit*) dan mengabaikan disiplin Git bertahap yang dinilai pada rubrik.
   * *Koreksi/Intervensi*: Penulis secara aktif mengendalikan alur kerja dengan mewajibkan pendekatan *incremental commit* dengan format *Conventional Commits*, memastikan penerapan warna tombol menggunakan pendekatan *Object-Oriented Programming* (properti `Color` pada model) daripada percabangan `if-else` yang rapuh, serta memvalidasi kesesuaian NPM, Nama, dan Kelas agar benar-benar mencerminkan identitas mahasiswa yang bersangkutan.
+
+---
+
+### Tugas 8
+
+#### 1. Jelaskan perbedaan antara `Navigator.push()`, `Navigator.pushReplacement()`, dan `Navigator.pop()`. Metode apa yang digunakan untuk membuka formulir dari kartu aksi? Jelaskan juga bagaimana opsi Home di drawer membawa pengguna kembali ke halaman utama.
+* **Perbedaan Ketiga Metode Navigator**:
+  * **`Navigator.push()`**: Menambahkan (*push*) sebuah *route* baru ke tumpukan (*stack*) navigasi teratas. Halaman sebelumnya tetap hidup di memori tepat di bawah halaman baru tersebut. Pendekatan ini mempertahankan riwayat navigasi sehingga pengguna dapat kembali ke halaman sebelumnya menggunakan tombol kembali (*back button*) fisik/sistem perangkat atau pemanggilan `Navigator.pop()`.
+  * **`Navigator.pushReplacement()`**: Menghapus *route* yang sedang aktif di puncak *stack* dan langsung menggantikannya dengan *route* baru yang diberikan. Halaman lama dibuang (*disposed*) dari *stack*, sehingga riwayat navigasi tidak bertambah panjang dan pengguna tidak dapat menekan tombol kembali untuk menuju ke halaman yang telah digantikan tersebut.
+  * **`Navigator.pop()`**: Menghapus (*pop*) *route* teratas dari *stack* navigasi dan mengembalikan tampilan ke halaman yang berada di bawahnya. Selain untuk kembali ke halaman sebelumnya, metode ini juga digunakan untuk menutup komponen modal seperti dialog konfirmasi (`AlertDialog`), *bottom sheet*, atau bilah menu *drawer*.
+* **Metode yang Digunakan untuk Membuka Formulir dari Kartu Aksi**:
+  * Untuk membuka formulir dari kartu aksi di beranda (`ItemCard`), digunakan metode **`Navigator.push()`**. Alasan pemilihannya adalah untuk membentuk hierarki navigasi alami: beranda berperan sebagai induk (*parent*), dan halaman formulir sebagai anak (*child*). Dengan `push()`, pengguna dapat menekan tombol kembali sistem pada Android atau tombol *Back* pada *browser* untuk kembali ke beranda dengan mudah.
+* **Bagaimana Opsi Home di Drawer Membawa Pengguna Kembali**:
+  * Pada komponen `LeftDrawer`, opsi **Home** menggunakan **`Navigator.pushReplacement()`** (`MaterialPageRoute(builder: (context) => MyHomePage())`).
+  * Saat pengguna berada di halaman formulir (`ProjectFormPage` atau `ExperienceFormPage`) lalu memilih opsi Home dari menu samping, rute formulir yang sedang aktif di puncak tumpukan digantikan langsung oleh `MyHomePage`. Mekanisme ini mencegah terciptanya tumpukan navigasi sirkular yang tak terbatas (misalnya: Home $\to$ Form $\to$ Home $\to$ Form) yang berpotensi membebani memori aplikasi dan membingungkan pengguna saat menekan tombol kembali.
+
+---
+
+#### 2. Bagaimana susunan Scaffold, AppBar, dan Drawer membantu menjaga struktur halaman tetap konsisten? Berikan satu contoh penggunaan warna tema portofolio di lebih dari satu halaman.
+* **Konsistensi Struktur Melalui Scaffold, AppBar, dan Drawer**:
+  * **`Scaffold`**: Bertindak sebagai kerangka visual utama (*layout template*) berstandar Material Design. `Scaffold` menyediakan slot baku yang terstruktur untuk penempatan elemen UI seperti `appBar`, `drawer`, dan `body`. Dengan menerapkan `Scaffold` di setiap halaman (`MyHomePage`, `ProjectFormPage`, `ExperienceFormPage`), aplikasi memiliki keseragaman area aman (*safe area*), batas tepi layar, dan pengelolaan elevasi visual.
+  * **`AppBar`**: Menampilkan bilah navigasi seragam di sisi atas setiap halaman. `AppBar` menyajikan judul halaman yang jelas, memuat tombol pembuka drawer (ikon hamburger) secara otomatis, atau menyediakan tombol kembali saat halaman dibuka via `Navigator.push()`.
+  * **`Drawer` (`LeftDrawer`)**: Berfungsi sebagai panel navigasi samping global. Dengan mengekstraksi drawer ke dalam satu widget mandiri (`lib/widgets/left_drawer.dart`) dan memasangnya pada properti `drawer` di setiap `Scaffold`, pengguna mendapatkan pengalaman navigasi yang identik dan mudah diakses dari layar mana pun tanpa perlu menduplikasi kode.
+* **Contoh Penggunaan Warna Tema Portofolio**:
+  * Warna tema primer portofolio adalah **Indigo** (`Colors.indigo`), yang diterapkan secara konsisten di berbagai komponen dan halaman:
+    1. Pada konfigurasi tema global di `lib/main.dart`: `colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo)`.
+    2. Pada bilah atas `AppBar` di `MyHomePage`: menggunakan `backgroundColor: Theme.of(context).colorScheme.primary` (yang merefleksikan Indigo).
+    3. Pada kepala laci `DrawerHeader` di `LeftDrawer`: didekorasi dengan `BoxDecoration(color: Colors.indigo)`.
+    4. Pada bilah atas `AppBar` dan tombol aksi Simpan (`ElevatedButton`) di `ProjectFormPage` dan `ExperienceFormPage`: menggunakan `backgroundColor: Colors.indigo` dan teks/ikon putih kontras.
+  * Keselarasan palet warna ini memperkuat identitas merek (*branding*) portofolio pribadi dan menciptakan estetika antarmuka yang kohesif.
+
+---
+
+#### 3. Mengapa tata letak tersebut dipilih untuk formulir? Jelaskan peran widget pengatur jarak dan widget penggulir ketika ruang layar terbatas.
+* **Alasan Pemilihan Tata Letak Formulir**:
+  * Tata letak formulir dirancang menggunakan hierarki: `Scaffold` $\to$ `Form` $\to$ `SingleChildScrollView` $\to$ `Padding` $\to$ `Column`.
+  * Tata letak berbasis `Column` vertikal dipilih karena selaras dengan pola membaca dan interaksi alami pengguna: kolom isian diisi secara berurutan dari atas ke bawah.
+  * Tombol aksi Simpan diletakkan di bagian paling bawah menggunakan widget `Align(alignment: Alignment.bottomCenter)` agar terpisah secara visual dari field isian data dan mudah dijangkau oleh ibu jari pengguna.
+* **Peran Widget Pengatur Jarak (`Padding` dan `SizedBox`)**:
+  * **`Padding`**: Memberikan jarak kosong pembatas di sekeliling setiap input field (`EdgeInsets.all(8.0)`) serta tepi terluar formulir. Hal ini mencegah elemen input menempel ke pinggiran layar perangkat atau saling berhimpitan, meningkatkan keterbacaan (*readability*) dan kenyamanan area sentuh (*touch target*).
+  * **`SizedBox`**: Digunakan untuk menetapkan jarak vertikal tetap (misalnya `SizedBox(height: 4)` di dalam dialog ringkasan) guna memisahkan baris informasi tanpa menambahkan dekorasi visual yang berat.
+* **Peran Widget Penggulir (`SingleChildScrollView`)**:
+  * Pada perangkat bergerak dengan ukuran layar terbatas, kumpulan field input beserta tombol aksi sering kali melebihi tinggi vertikal layar yang tersedia.
+  * Masalah ini menjadi kritis saat pengguna mengetuk salah satu kolom input dan papan ketik virtual (*soft keyboard*) muncul di layar, mengurangi tinggi area pandang (*viewport*) hingga 40–60%.
+  * Tanpa `SingleChildScrollView`, widget `Column` yang kaku akan memicu kesalahan fatal tata letak Flutter, yaitu **RenderFlex Overflow** (ditandai dengan pola garis kuning-hitam di layar).
+  * Dengan membungkus formulir menggunakan `SingleChildScrollView`, seluruh konten secara dinamis menjadi dapat digulir (*scrollable*), memastikan pengguna tetap dapat melihat input yang sedang aktif, memeriksa pesan validasi error, dan menekan tombol Simpan tanpa hambatan.
+
+---
+
+#### 4. Apa peran `GlobalKey<FormState>`, `validator`, dan `validate()` saat tombol Simpan ditekan? Berikan satu contoh nilai yang ditolak oleh validasi dan jelaskan mengapa memilih jenis input atau papan ketik saja belum cukup.
+* **Peran Komponen Form Saat Tombol Simpan Ditekan**:
+  * **`GlobalKey<FormState>`**: Berperan sebagai kunci pengenal unik global yang mengikat widget `Form` dengan objek statusnya (`FormState`). Kunci ini memungkinkan logika di luar form (seperti fungsi `onPressed` pada tombol Simpan) untuk mengakses dan mengendalikan status internal form, seperti memicu validasi atau mereset seluruh kolom.
+  * **`validator`**: Merupakan fungsi logika pengecekan yang didefinisikan pada setiap `FormField` (seperti `TextFormField` atau `DropdownButtonFormField`). Fungsi ini menerima nilai terkini dari input (`String? value`) dan mengembalikan string pesan kesalahan jika aturan tidak terpenuhi, atau `null` jika input dinyatakan sah.
+  * **`validate()`**: Metode pada `FormState` yang dipanggil melalui `_formKey.currentState!.validate()`. Saat dieksekusi, metode ini secara otomatis menelusuri seluruh widget input anak di dalam `Form` dan menjalankan fungsi `validator` masing-masing secara bersamaan. Jika salah satu input mengembalikan pesan kesalahan, `validate()` mengembalikan nilai `false` dan pesan error langsung ditampilkan di bawah kolom yang bersangkutan. Sebaliknya, jika seluruh input lulus validasi, `validate()` mengembalikan nilai `true`, sehingga blok penyimpanan data dan pemanggilan `showDialog()` dapat dijalankan.
+* **Contoh Nilai yang Ditolak oleh Validasi**:
+  1. **Isian Kosong atau Whitespace**: Pada input Judul Pengalaman atau Deskripsi Pengalaman, jika pengguna memasukkan `"   "` (hanya spasi), validasi `value.trim().isEmpty` akan menolaknya dengan pesan *"Judul pengalaman tidak boleh kosong!"*.
+  2. **Batas Panjang Karakter**: Jika pengguna memasukkan judul pengalaman dengan panjang lebih dari 255 karakter, validasi `value.trim().length > 255` akan menolak input tersebut dengan pesan *"Judul tidak boleh melebihi 255 karakter!"*.
+  3. **Format URL**: Pada field tautan/thumbnail, jika pengguna memasukkan teks tanpa skema URL web yang valid (seperti `"gambar-logo"`), parsing `Uri.tryParse()` akan menolak input tersebut dengan pesan *"Format URL tidak valid! Harus diawali http:// atau https://"*.
+  4. **Kronologi Tanggal**: Jika pengguna memilih Tanggal Selesai yang jatuh lebih lampau daripada Tanggal Mulai (misalnya Mulai: `01/10/2026` dan Selesai: `01/05/2026`), validasi `_endedAt!.isBefore(_startedAt!)` akan menolaknya dengan pesan *"Tanggal selesai tidak boleh sebelum tanggal mulai!"*.
+* **Mengapa Menentukan Jenis Input atau Papan Ketik Saja Belum Cukup**:
+  * Mengonfigurasi properti papan ketik (seperti `keyboardType: TextInputType.url` atau `TextInputType.datetime`) **hanya berfungsi sebagai petunjuk tampilan (*UI input hint*)** bagi sistem operasi untuk menampilkan variasi papan ketik yang mempermudah pengetikan (misalnya menampilkan tombol `.com` atau `/`).
+  * Papan ketik **sama sekali tidak melakukan verifikasi data**:
+    * Pengguna tetap dapat menempelkan (*paste*) teks sembarang yang melanggar format dari *clipboard*.
+    * Papan ketik tidak dapat mencegah pengguna membiarkan kolom kosong atau mengirim spasi semata.
+    * Papan ketik tidak memiliki kesadaran logika bisnis (*business logic awareness*), seperti mengecek batas panjang karakter, validitas sintaks URL, atau membandingkan urutan antara dua tanggal berbeda.
+  * Oleh karena itu, validasi terprogram (*programmatic validation*) menggunakan `validator` dan `validate()` adalah mekanisme pertahanan utama yang wajib diimplementasikan untuk menjamin integritas data sebelum diproses oleh aplikasi.
+
+---
+
+### Pernyataan Penggunaan AI (AI Disclosure) - Tugas 8
+
+Dalam pengerjaan Individual Assignment 8 ini, kecerdasan buatan (AI) digunakan sebagai alat bantu pengembangan dengan rincian transparansi sebagai berikut:
+
+* **Alat / Model AI yang Digunakan**:
+  * Antigravity AI Coding Assistant yang ditenagai oleh model **Google Gemini 3.8 Flash**.
+* **Strategi Prompting**:
+  * **Pemberian Konteks Dokumen Spesifikasi**: Memberikan dokumen spesifikasi resmi (`tugas-8.pdf`) serta meninjau model Django yang telah dibangun sebelumnya (`myportofolio/main/models.py`) agar field formulir Flutter selaras dengan model `Experience` (judul, deskripsi, kategori, thumbnail, tanggal mulai, dan tanggal selesai).
+  * **Dekomposisi Masalah Secara Bertahap**: Membagi implementasi ke dalam sub-tugas terisolasi: (1) Form & validasi input komprehensif, (2) Navigasi Drawer & ItemCard, (3) Pencegahan overflow via `SingleChildScrollView`, (4) Jawaban pertanyaan reflektif mendalam.
+  * **Kepatuhan Pembatasan Git**: Mengikuti instruksi eksplisit pengguna untuk **tidak melakukan commit dan push terlebih dahulu**, sehingga pengguna dapat meninjau seluruh perubahan berkas secara mandiri sebelum disimpan ke riwayat Git.
+* **Bagian Spesifik yang Dibantu oleh AI**:
+  1. Implementasi widget halaman baru `ExperienceFormPage` di [experience_form.dart](file:///D:/PC/Downloads/PBPFlutter/myportofolio_mobile/lib/screens/experience_form.dart) lengkap dengan integrasi `showDatePicker()` untuk pemilihan tanggal interaktif.
+  2. Penyesuaian `LeftDrawer` dan `ItemCard` untuk menghubungkan navigasi ke halaman formulir pengalaman.
+  3. Mengatasi potensi *RenderFlex overflow* pada `MyHomePage` dengan membungkus kontainer body menggunakan `SingleChildScrollView`.
+  4. Penyusunan jawaban reflektif komprehensif untuk Tugas 8 pada dokumentasi `README.md`.
+* **Telaah Kritis Keterbatasan AI & Koreksi Manual yang Dilakukan**:
+  * *Keterbatasan*: Papan ketik virtual dan perbedaan resolusi layar uji (800x600) dapat menyebabkan overflow jika form atau grid beranda tidak dibungkus widget scrollable. AI terkadang mengabaikan validasi relasional antar-field seperti perbandingan tanggal mulai dan selesai.
+  * *Koreksi/Intervensi*: Menambahkan validasi logika tanggal bahwa tanggal selesai tidak boleh sebelum tanggal mulai, menambahkan ikon pembersih tanggal pada field tanggal selesai, serta memastikan pengujian otomatis (`flutter test` dan `flutter analyze`) berjalan 100% bebas error tanpa melakukan commit/push sebelum persetujuan pengguna.
