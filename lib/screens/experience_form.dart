@@ -1,3 +1,9 @@
+import '../models/experience.dart';
+import '../services/api_client.dart';
+import '../services/auth_state.dart';
+import '../widgets/auth_guard.dart';
+
+import 'package:provider/provider.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/widgets/left_drawer.dart';
 
@@ -9,6 +15,7 @@ class ExperienceFormPage extends StatefulWidget {
 }
 
 class _ExperienceFormPageState extends State<ExperienceFormPage> {
+  bool _saving = false;
   final _formKey = GlobalKey<FormState>();
 
   String _title = "";
@@ -48,7 +55,7 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
-    if (picked != null) {
+    if (mounted && picked != null) {
       setState(() {
         _startedAt = picked;
         _startedAtController.text = _formatDate(picked);
@@ -63,7 +70,7 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
-    if (picked != null) {
+    if (mounted && picked != null) {
       setState(() {
         _endedAt = picked;
         _endedAtController.text = _formatDate(picked);
@@ -71,13 +78,74 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
     }
   }
 
+  Future<void> _submit() async {
+    if (_saving || !_formKey.currentState!.validate()) return;
+    setState(() => _saving = true);
+    final auth = context.read<AuthState>();
+    final api = context.read<ApiClient>();
+    String? usedToken;
+    try {
+      if (!await ensureLoggedIn(context) || !mounted) return;
+      usedToken = auth.token;
+      if (usedToken == null) return;
+      final result = await api.createExperience(
+        Experience(
+          title: _title.trim(),
+          description: _description.trim(),
+          category: _category.toLowerCase(),
+          thumbnail: _thumbnail.trim().isEmpty ? null : _thumbnail.trim(),
+          startedAt: _startedAt!,
+          endedAt: _endedAt,
+        ),
+        token: usedToken,
+      );
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Pengalaman berhasil ditambahkan'),
+          content: Text(result.title),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      if (mounted) Navigator.pop(context);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      if (e.statusCode == 401 && usedToken != null) {
+        auth.expire(usedToken);
+        _message('Sesi berakhir. Login kembali, lalu tekan Save.');
+        await ensureLoggedIn(context);
+      } else {
+        _message(
+          e.statusCode == 403
+              ? 'Hanya pemilik portofolio yang dapat menambah pengalaman.'
+              : e.toString(),
+        );
+      }
+    } on Exception {
+      if (mounted) {
+        _message(
+          'Penyimpanan belum terkonfirmasi. Periksa daftar pengalaman dan koneksimu.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  void _message(String text) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Center(
-          child: Text('Add Experience Form'),
-        ),
+        title: const Center(child: Text('Add Experience Form')),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
@@ -123,7 +191,8 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
                 child: TextFormField(
                   maxLines: 4,
                   decoration: InputDecoration(
-                    hintText: "Jelaskan peran, tanggung jawab, dan pencapaian Anda",
+                    hintText:
+                        "Jelaskan peran, tanggung jawab, dan pencapaian Anda",
                     labelText: "Deskripsi Pengalaman",
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(5.0),
@@ -155,10 +224,12 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
                   ),
                   initialValue: _category,
                   items: _categories
-                      .map((category) => DropdownMenuItem(
-                            value: category,
-                            child: Text(category),
-                          ))
+                      .map(
+                        (category) => DropdownMenuItem(
+                          value: category,
+                          child: Text(category),
+                        ),
+                      )
                       .toList(),
                   onChanged: (String? newValue) {
                     setState(() {
@@ -214,7 +285,9 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
                   ),
                   onTap: () => _selectStartDate(context),
                   validator: (String? value) {
-                    if (_startedAt == null || value == null || value.trim().isEmpty) {
+                    if (_startedAt == null ||
+                        value == null ||
+                        value.trim().isEmpty) {
                       return "Tanggal mulai wajib dipilih!";
                     }
                     return null;
@@ -272,54 +345,9 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
                   padding: const EdgeInsets.all(8.0),
                   child: ElevatedButton(
                     style: ButtonStyle(
-                      backgroundColor:
-                          WidgetStateProperty.all(Colors.indigo),
+                      backgroundColor: WidgetStateProperty.all(Colors.indigo),
                     ),
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            return AlertDialog(
-                              title: const Text('Pengalaman Berhasil Ditambahkan!'),
-                              content: SingleChildScrollView(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Judul / Posisi: $_title'),
-                                    const SizedBox(height: 4),
-                                    Text('Deskripsi: $_description'),
-                                    const SizedBox(height: 4),
-                                    Text('Kategori: $_category'),
-                                    const SizedBox(height: 4),
-                                    Text('Thumbnail: ${_thumbnail.trim().isNotEmpty ? _thumbnail.trim() : "-"}'),
-                                    const SizedBox(height: 4),
-                                    Text('Tanggal Mulai: ${_formatDate(_startedAt!)}'),
-                                    const SizedBox(height: 4),
-                                    Text('Tanggal Selesai: ${_endedAt != null ? _formatDate(_endedAt!) : "Masih Berlangsung (Ongoing)"}'),
-                                  ],
-                                ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  child: const Text('OK'),
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                    _formKey.currentState!.reset();
-                                    setState(() {
-                                      _startedAt = null;
-                                      _endedAt = null;
-                                      _startedAtController.clear();
-                                      _endedAtController.clear();
-                                    });
-                                  },
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      }
-                    },
+                    onPressed: _saving ? null : _submit,
                     child: const Text(
                       "Save",
                       style: TextStyle(color: Colors.white),

@@ -9,7 +9,7 @@ void main() {
 
     // Verify that the app bar title and menu items are displayed.
     expect(find.text('MyPortfolio'), findsOneWidget);
-    expect(find.text('Lihat Proyek'), findsOneWidget);
+    expect(find.text('Lihat Pengalaman'), findsOneWidget);
     expect(find.text('Tambah Proyek'), findsOneWidget);
     expect(find.text('Tambah Pengalaman'), findsOneWidget);
   });

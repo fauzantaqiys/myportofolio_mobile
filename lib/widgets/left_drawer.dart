@@ -1,6 +1,12 @@
+import 'package:provider/provider.dart';
+
+import '../services/auth_state.dart';
+import 'auth_guard.dart';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/screens/experience_form.dart';
 import 'package:myportofolio_mobile/screens/menu.dart';
+import 'package:myportofolio_mobile/screens/experience_list.dart';
 import 'package:myportofolio_mobile/screens/project_form.dart';
 
 class LeftDrawer extends StatelessWidget {
@@ -11,30 +17,28 @@ class LeftDrawer extends StatelessWidget {
     return Drawer(
       child: ListView(
         children: [
-          const DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.indigo,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'My Portfolio',
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+          const DecoratedBox(
+            decoration: BoxDecoration(color: Colors.indigo),
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'My Portfolio',
+                    style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-                SizedBox(height: 10),
-                Text(
-                  'Explore personal projects and experiences!',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.white,
+                  SizedBox(height: 10),
+                  Text(
+                    'Explore personal projects and experiences!',
+                    style: TextStyle(fontSize: 15, color: Colors.white),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           ListTile(
@@ -44,8 +48,19 @@ class LeftDrawer extends StatelessWidget {
             onTap: () {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => MyHomePage(),
+                MaterialPageRoute(builder: (context) => MyHomePage()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.add_circle_outline),
+            title: const Text('Lihat Pengalaman'),
+            onTap: () {
+              final navigator = Navigator.of(context);
+              navigator.pop();
+              navigator.push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const ExperienceListPage(),
                 ),
               );
             },
@@ -66,14 +81,32 @@ class LeftDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.work_outline),
             title: const Text('Add Experience'),
-            // Navigasi ke halaman tambah pengalaman
+            onTap: () async {
+              final navigator = Navigator.of(context);
+              navigator.pop();
+              if (await ensureLoggedIn(navigator.context) &&
+                  navigator.mounted) {
+                navigator.push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const ExperienceFormPage(),
+                  ),
+                );
+              }
+            },
+          ),
+          ListTile(
+            leading: Icon(
+              context.watch<AuthState>().isLoggedIn
+                  ? Icons.logout
+                  : Icons.login,
+            ),
+            title: Text(
+              context.watch<AuthState>().isLoggedIn ? 'Logout' : 'Login',
+            ),
             onTap: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ExperienceFormPage(),
-                ),
-              );
+              final navigator = Navigator.of(context);
+              navigator.pop();
+              handleSessionAction(navigator.context);
             },
           ),
         ],
